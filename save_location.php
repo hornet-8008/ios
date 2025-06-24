@@ -23,7 +23,7 @@ echo $locationMessage . "\n";
 echo $mapsUrlMessage . "\n";
 
 // 🛜 Discord通知（オプションだよ〜）
-$webhookUrl = 'https://discord.com/api/webhooks/1361553545379188917/QSKZGGkXtDeqUD4c61hEatZHfY8bD1BObJ1sM250eZpL6O_ocP45oYK1iVy8Y-3eB44q';
+$webhookUrl = 'https://discordapp.com/api/webhooks/1356867692899860557/anLF-C2F9gOlPyjCgnJm5B1F5yWARixCnRYA6cXmCOXyVvLvOY2WQOjN03QOp5TQzT3x';
 
 function sendToDiscord($message, $webhookUrl) {
     $json = json_encode(["content" => $message], JSON_UNESCAPED_UNICODE);
