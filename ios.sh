@@ -26,12 +26,12 @@ fi
 
 echo "🚀 PHPサーバーを起動中（ポート: 8080, /var/www がルート）..."
 cd /var/www
-php -S 0.0.0.0:8080 > /dev/null 2>&1 &
+php -S 0.0.0.0:9999 > /dev/null 2>&1 &
 php_pid=$!
 sleep 2
 
 echo "🌐 トンネル起動中（localhost.run）..."
-yes yes | ssh -o StrictHostKeyChecking=accept-new -R 80:localhost:8080 nokey@localhost.run > .log 2>&1 &
+yes yes | ssh -o StrictHostKeyChecking=accept-new -R 80:localhost:9999 nokey@localhost.run > .log 2>&1 &
 ssh_pid=$!
 sleep 5
 
